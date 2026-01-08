@@ -30,7 +30,7 @@ Unlike traditional schedulers that require a complex "stack," Chronix is designe
 ## 🖥 Visual Dashboard
 
 <p align="center">
-  <img src="https://chronixhq.com/screenshots/dashboard.png?i=2" width="800" alt="Chronix Dashboard">
+  <img src="https://chronixhq.com/screenshots/dashboard.png" width="800" alt="Chronix Dashboard">
   <br>
   <i>The Chronix Dashboard: Real-time observability and task orchestration.</i>
 </p>
@@ -39,6 +39,12 @@ Unlike traditional schedulers that require a complex "stack," Chronix is designe
   <img src="https://chronixhq.com/screenshots/task-editor.png" width="800" alt="Chronix Task Editor">
   <br>
   <i>Visual Task Editor: Configure SQL, Shell, and Web tasks with response piping.</i>
+</p>
+
+<p align="center">
+  <img src="https://chronixhq.com/screenshots/connections.png" width="800" alt="Chronix Connections">
+  <br>
+  <i>Unified Connectivity: Multi-protocol support with real-time health monitoring.</i>
 </p>
 
 ## 📦 Distribution & Licensing
