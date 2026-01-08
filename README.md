@@ -30,7 +30,7 @@ Unlike traditional schedulers that require a complex "stack," Chronix is designe
 ## 🖥 Visual Dashboard
 
 <p align="center">
-  <img src="https://chronixhq.com/screenshots/dashboard.png" width="800" alt="Chronix Dashboard">
+  <img src="https://chronixhq.com/screenshots/dashboard.png?i=1" width="800" alt="Chronix Dashboard">
   <br>
   <i>The Chronix Dashboard: Real-time observability and task orchestration.</i>
 </p>
