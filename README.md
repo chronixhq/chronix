@@ -1,69 +1,120 @@
-# Chronix: Sovereign, High-Performance Task Automation
 
-<p align="center">
-  <img src="https://chronixhq.com/Chronix-white.png" width="400" alt="Chronix Logo">
-  <br>
-  <b>Zero-Dependency Automation. Total Sovereignty.</b>
-</p>
+# Chronix
+
+**Zero-dependency task automation. Run SQL, Shell, and Web Tasks on time, every time.**
+
+Chronix is a self-contained, high-performance task automation and scheduling platform. It is designed for engineers who need a powerful, reliable "set-and-forget" automation engine without the complexity of external databases, heavy runtimes, or multi-service deployments.
+
+---
+
+## ⚡️ Key Features
+
+- **🚀 Single-Binary Power**: A zero-dependency Go binary. Copy it and run.
+- **🛠 Multi-Step Orchestration**: Chain SQL queries, Shell scripts, and API calls into complex, resilient workflows.
+- **🤖 Remote Agents**: Extend your reach into any network environment with lightweight, phone-home agents—no firewall inbound ports required.
+- **🖥 Embedded Web UI**: Manage everything through a professional, real-time React dashboard with live SSE logs and progress tracking.
+- **📅 Human-Friendly Scheduling**: Use standard Cron or natural language rules like "The last Friday of every month."
+- **🔐 Production-Ready Security**: TOFU pinning for agents, encrypted secret storage, and secure admin bootstrap.
+- **📊 Deep Observability**: Unified activity timelines, structured logging, and instant Email/SMS alerting.
 
 ---
 
-Chronix is a self-contained automation platform designed for engineers who demand total data sovereignty and operational simplicity. By eliminating external database dependencies and complex runtimes, Chronix provides a robust, enterprise-grade scheduler in a single, portable binary.
+## Open Source
 
-## 🚀 Key Capabilities
+Chronix is 100% open source. The server, embedded web app, public website, and Chronix Crucible validation suite are published for everyone to inspect, run, modify, and improve.
 
-*   **Integrated Persistence Engine**: All state and execution history live within a localized, high-concurrency internal engine—no external database (Postgres/MySQL) required.
-*   **Secure Agent Orchestration**: Manage tasks across remote infrastructure using encrypted WebSocket agents that "phone home" through firewalls via Ed25519-signed JWTs.
-*   **Multi-Modal Tasking**: Native support for **SQL assertions** (SQLite, PG, MySQL), **Shell scripting** (local/SSH), and **Web/API hooks** with JSONPath response piping.
-*   **Human-Friendly Scheduling**: Define rules like "Last Friday of the month" or standard 5-field Cron with active concurrency control.
-*   **Real-Time Observability**: Watch execution live via SSE (Server-Sent Events) and a unified activity timeline.
-*   **Sovereign Deployment**: Ideal for air-gapped environments, private clouds, and local workstations. One binary, zero dependencies.
-
-## 🛠 How it Works
-
-Unlike traditional schedulers that require a complex "stack," Chronix is designed to be "unzip and run".
-
-1.  **Download**: Get the binary for your architecture (Linux, macOS, Windows).
-2.  **Initialize**: Run `./chronix run` to bootstrap your secure admin account and start the Web UI.
-3.  **Automate**: Define your connections, actions, and recurring schedules through the intuitive React-based dashboard.
-
-## 🖥 Visual Dashboard
-
-<p align="center">
-  <img src="https://chronixhq.com/screenshots/dashboard.png?i=2" width="800" alt="Chronix Dashboard">
-  <br>
-  <i>The Chronix Dashboard: Real-time observability and task orchestration.</i>
-</p>
-
-<p align="center">
-  <img src="https://chronixhq.com/screenshots/task-editor.png" width="800" alt="Chronix Task Editor">
-  <br>
-  <i>Visual Task Editor: Configure SQL, Shell, and Web tasks with response piping.</i>
-</p>
-
-<p align="center">
-  <img src="https://chronixhq.com/screenshots/connections.png" width="800" alt="Chronix Connections">
-  <br>
-  <i>Unified Connectivity: Multi-protocol support with real-time health monitoring.</i>
-</p>
-
-## 📦 Distribution & Licensing
-
-**Source Code**: The core source code for Chronix is currently private to protect our proprietary persistence and security architecture.
-
-**Release Binaries**: Compiled binaries for Linux, macOS, and Windows are distributed via our [Official Website](https://chronixhq.com/download).
-
-**Licensing**: Chronix offers flexible licensing to suit different needs:
-*   **Free Tier**: 1 Server, 1 Agent, 5 Jobs. Ideal for individuals and home-labs.
-*   **Subscription**: Continuous updates and major version upgrades (Pro/Enterprise).
-*   **Perpetual**: Own a specific major version (v1.x) forever with a one-time purchase—perfect for air-gapped systems.
-
-## 🤝 Community & Support
-
-While the source is private, we are committed to a community-driven roadmap:
-*   **Issue Tracker**: Report bugs or suggest new task types/drivers in the [Issues](https://github.com/chronixhq/chronix/issues) tab.
-*   **Discussions**: Ask questions and share automation patterns in our [Discussions](https://github.com/chronixhq/chronix/discussions) area.
-*   **Private Beta**: We are currently in a closed beta phase. [Apply for Early Access here](https://chronixhq.com/beta).
+- Licensed under the ISC License.
+- No paid editions, license keys, subscriptions, or feature gates.
+- Development happens in public through GitHub issues and pull requests.
 
 ---
-[Website](https://chronixhq.com) | [Documentation](https://chronixhq.com/guides/getting-started) | [Pricing](https://chronixhq.com/pricing) | [Contact Support](mailto:support@chronixhq.com)
+
+## 🛠 Task Types
+
+### 1. SQL Tasking
+Automate your data infrastructure across **SQLite**, **PostgreSQL**, and **MySQL**. Assert on results, check rows affected, or verify specific field values.
+
+### 2. Shell & Scripting
+Run commands locally or via **SSH**. Full support for `sudo`, environment variables, and advanced regex-based output verification.
+
+### 3. Web Tasks (HTTP)
+The glue for your microservices. Execute API calls, capture response data via JSONPath, and pipe it into subsequent steps.
+
+---
+
+## 🤖 The Chronix Agent
+
+Chronix Agents allow you to execute tasks on remote servers or within private networks. They connect back to the Chronix server via an encrypted WebSocket, bypassing the need for complex firewall rules or VPNs.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install and Run the Server
+You can run Chronix directly, or install it as a native system service for your platform (Linux/macOS/Windows).
+
+```bash
+# Run directly (foreground)
+./chronix
+
+# Or install as a system service (recommended)
+./chronix service install
+./chronix service status
+```
+
+### 2. Bootstrap Admin
+On the first run, Chronix will generate a one-time admin code. Navigate to the Web UI (default: `http://localhost:5170`) and use this code to create your admin account.
+
+### 3. Schedule a Job
+Once logged in, you can create a **Connection**, define an **Action** (one or more steps), and schedule a **Job** to run it.
+
+---
+
+## 📦 Installation
+
+Download the latest binary for your platform using the following pattern:
+`https://dist.chronixhq.com/latest/<platform>/<app>`
+
+**Platforms:** `linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`, `windows-amd64`
+
+**Example (Linux AMD64):**
+- [Chronix Server](https://dist.chronixhq.com/latest/linux-amd64/chronix)
+- [Chronix Agent](https://dist.chronixhq.com/latest/linux-amd64/chronix-agent)
+
+---
+
+## 🛠 CLI Commands
+
+Chronix and Chronix Agent provide a unified set of commands for lifecycle management:
+
+- `stop`: Gracefully stop the running instance.
+- `status`: Check if the application is running.
+- `restart`: Restart the application.
+- `service`: Manage the native OS service (install, uninstall, start, stop, status).
+- `version`: Print version and release notes.
+
+---
+
+## 🏗 Data Directory
+
+Chronix stores all its state (SQLite database, keys, and logs) in a single directory.
+
+**Standard (Root/System-wide):**
+- **Linux**: `/var/lib/chronix`
+- **Windows**: `C:\ProgramData\Chronix`
+
+**User-specific (Non-root):**
+- **Linux**: `~/.local/share/chronix` (follows XDG spec)
+- **macOS**: `~/Library/Application Support/Chronix`
+
+You can override this by setting the `CHRONIX_DATA_DIR` environment variable or using the `-D` flag.
+
+---
+
+## 🧪 Testing
+
+To ensure stability and correctness, we provide both automated unit tests and a comprehensive manual testing checklist.
+
+- **Automated Tests**: Run `go test ./...` to execute the backend test suite.
+- **Local Release Gate**: Run `./dev/ci-local.sh` for the full local validation pass used before commits, pushes, and releases.
+- **Manual Checklist**: Follow the [Release Testing Checklist](docs/testing_checklist.md) for a step-by-step verification of the entire system, including UI and Agent flows.

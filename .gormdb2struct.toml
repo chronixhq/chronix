@@ -1,0 +1,62 @@
+# gormdb2struct configuration
+# OutPath: directory where generated files are written (models, query, db init)
+OutPath = "./internal/db"
+
+# DatabaseDialect: "postgresql" or "sqlite"
+DatabaseDialect = "sqlite"
+
+# OutPackagePath: package path to the out path for use in the DbInit file (e.g. github.com/username/my_app/generated) (optional)
+OutPackagePath = "chronix/internal/db"
+
+# GenerateDbInit: also generate a db initialization file (db.go or db_sqlite.go)
+GenerateDbInit = true
+
+# IncludeAutoMigrate: if true, generated DbInit will run AutoMigrate for all models
+IncludeAutoMigrate = false
+
+# CleanUp: remove previous *gen.go files in OutPath before generating
+CleanUp = true
+
+# --- SQLite specific option ---
+# Required when DatabaseDialect = "sqlite"
+SqliteDbPath = "./internal/db/assets/schema.db"
+
+# ImportPackagePaths: extra imports to include in generated code (optional)
+#ImportPackagePaths = [
+#    "github.com/dan-sherwin/gormdb2struct/pgtypes",
+#]
+
+# TypeMap: database column type overrides (optional)
+#[TypeMap]
+# "JSONB" = "datatypes.JSONMap"
+# "uuid"  = "datatypes.UUID"
+
+# DomainTypeMap: map database domain names to Go types (optional)
+#[DomainTypeMap]
+# "my_text_domain" = "string"
+
+# ExtraFields: add relation fields to specific models (optional)
+[ExtraFields]
+ [[ExtraFields."bug_reports"]]
+   StructPropName = "FeedbackAttachments"
+   StructPropType = "models.FeedbackAttachment"
+   FkStructPropName = "BugReportID"
+   RefStructPropName = "ID"
+   HasMany = true
+   Pointer = true
+ [[ExtraFields."feature_requests"]]
+   StructPropName = "FeedbackAttachments"
+   StructPropType = "models.FeedbackAttachment"
+   FkStructPropName = "FeatureRequestID"
+   RefStructPropName = "ID"
+   HasMany = true
+   Pointer = true
+
+# JsonTagOverridesByTable: override json tags for fields (optional)
+[JsonTagOverridesByTable]
+ [JsonTagOverridesByTable."cx_users"]
+   password = ",omitempty"  # omit from JSON
+   sv = "-"
+ [JsonTagOverridesByTable."db_connections"]
+   password = ",omitempty"  # omit from JSON
+

@@ -1,0 +1,1626 @@
+openapi: 3.1.0
+info:
+  title: Chronix REST API
+  version: 0.1.0
+  description: |
+    Chronix is a zero-dependency job scheduler that runs SQL tasks on time.
+
+    This OpenAPI document reflects the current server endpoints and data types as implemented in the repo.
+
+    Conventions:
+    - All JSON properties use camelCase.
+    - Responses use `restresponse` helpers: success returns raw objects; errors return a standard error envelope.
+  contact:
+    name: Chronix
+  license:
+    name: ISC
+servers:
+  - url: http://localhost:5170
+    description: Local development
+  - url: /
+    description: Relative to the current origin (production)
+security:
+  - cookieAuth: []
+
+tags:
+  - name: Auth
+  - name: System
+  - name: Settings
+  - name: Users
+  - name: Notifications
+  - name: DB Connections
+  - name: Actions
+  - name: Jobs
+  - name: Runs
+  - name: Agents
+
+paths:
+  
+  /auth/settings/{code}:
+    get:
+      tags: [Auth]
+      summary: Exchange admin bootstrap code for a session
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Logged in (cookie set)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginStatus'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/Internal' }
+      security: []
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Logged in (cookie set)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginStatus'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/Internal' }
+
+  /logout:
+    get:
+      tags: [Auth]
+      summary: Logout current user
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /checkauth:
+    get:
+      tags: [Auth]
+      summary: Check that the current session is valid
+      responses:
+        '204': { description: Authenticated }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /initialize:
+    post:
+      tags: [System]
+      summary: One-time server initialization (admin only)
+      description: Creates the first admin user and sets server URL. Requires admin session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cxUser:
+                  $ref: '#/components/schemas/User'
+                serverUrl:
+                  type: string
+              required: [cxUser, serverUrl]
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/Internal' }
+
+  /sse:
+    get:
+      tags: [System]
+      summary: Server-Sent Events stream for the current user
+      description: Returns a text/event-stream. Not modeled further in OpenAPI.
+      responses:
+        '200': { description: SSE stream }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /serverUrl:
+    post:
+      tags: [Settings]
+      summary: Set server URL (legacy single-setting endpoint)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serverUrl: { type: string }
+              required: [serverUrl]
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/Internal' }
+
+  /settings/settings:
+    get:
+      tags: [Settings]
+      summary: Get global settings (admin)
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSettings'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    put:
+      tags: [Settings]
+      summary: Update global settings (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSettingsPut'
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/Internal' }
+
+  /me:
+    get:
+      tags: [Users]
+      summary: Get the current user
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    put:
+      tags: [Users]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /me/password:
+    put:
+      tags: [Users]
+      summary: Change current user password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string }
+              required: [currentPassword, newPassword]
+      responses:
+        '204': { description: Password changed; session invalidated }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /me/activity:
+    get:
+      tags: [Users]
+      summary: Get recent activity for current user
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 200 }
+      responses:
+        '200':
+          description: Activity list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserActivity' }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users (admin)
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /user:
+    post:
+      tags: [Users]
+      summary: Create or update a user (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Saved user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /settings/users/activity:
+    get:
+      tags: [Users]
+      summary: List recent activity for all users (admin)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 200 }
+      responses:
+        '200':
+          description: Activity list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserActivity' }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /users/check-email:
+    get:
+      tags: [Users]
+      summary: Admin email uniqueness check
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema: { type: string, format: email }
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /me/check-email:
+    get:
+      tags: [Users]
+      summary: Check if an email is available for the current user
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema: { type: string, format: email }
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /notifications/recent:
+    get:
+      tags: [Notifications]
+      summary: Get recent notifications for current user
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200 }
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Notification' }
+                  unseenCount: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for current user
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 200 }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: severity
+          schema: { type: string }
+        - in: query
+          name: seen
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Notification' }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    
+  /notifications/mark-seen:
+    post:
+      tags: [Notifications]
+      summary: Mark notifications as seen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items: { type: integer, format: int64 }
+              required: [ids]
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /notifications/mark-removed:
+    post:
+      tags: [Notifications]
+      summary: Remove notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items: { type: integer, format: int64 }
+              required: [ids]
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /connections:
+    get:
+      tags: [DB Connections]
+      summary: List database connections
+      responses:
+        '200':
+          description: Connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DbConnectionListItem' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [DB Connections]
+      summary: Create database connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbConnectionPayload'
+      responses:
+        '200':
+          description: Created connection id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  
+  /connections/{id}:
+    get:
+      tags: [DB Connections]
+      summary: Get database connection
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Connection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbConnectionDetail'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    put:
+      tags: [DB Connections]
+      summary: Update database connection
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbConnectionPayload'
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    delete:
+      tags: [DB Connections]
+      summary: Delete database connection
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Success }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  
+  /connections/{id}/test:
+    post:
+      tags: [DB Connections]
+      summary: Test connection by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTestResult'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /connections/test:
+    post:
+      tags: [DB Connections]
+      summary: Test draft connection payload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DbConnectionPayload'
+      responses:
+        '200':
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DbTestResult'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /actions:
+    get:
+      tags: [Actions]
+      summary: List actions
+      responses:
+        '200':
+          description: Actions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ActionListItem' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Actions]
+      summary: Create action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionPayload'
+      responses:
+        '200':
+          description: Created action id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /actions/{id}:
+    get:
+      tags: [Actions]
+      summary: Get action
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Action detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionDetail'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    put:
+      tags: [Actions]
+      summary: Update action
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionPayload'
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    delete:
+      tags: [Actions]
+      summary: Delete action
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Success }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /actions/validate-step:
+    post:
+      tags: [Actions]
+      summary: Validate an action step payload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionStepPayload'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  errors:
+                    type: array
+                    items: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: List jobs
+      responses:
+        '200':
+          description: Jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Job' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Jobs]
+      summary: Create job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobPayload'
+      responses:
+        '200':
+          description: Created job id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Get job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Job detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetail'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    put:
+      tags: [Jobs]
+      summary: Update job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobPayload'
+      responses:
+        '204': { description: Success }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    delete:
+      tags: [Jobs]
+      summary: Delete job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Success }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /jobs/{id}/enable:
+    post:
+      tags: [Jobs]
+      summary: Enable job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Success }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /jobs/{id}/disable:
+    post:
+      tags: [Jobs]
+      summary: Disable job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Success }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /jobs/{id}/runNow:
+    post:
+      tags: [Jobs]
+      summary: Queue an immediate run for the job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: queued }
+                  runId: { $ref: '#/components/schemas/RunId' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /jobs/{id}/runs:
+    get:
+      tags: [Runs]
+      summary: List recent runs for a job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        '200':
+          description: Job runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunListItem' }
+                  total: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /runs:
+    get:
+      tags: [Runs]
+      summary: List runs with filters
+      parameters:
+        - in: query
+          name: job_id
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+        - in: query
+          name: until
+          schema: { type: string, format: date-time }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunListItem' }
+                  total: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /runs/{runId}:
+    get:
+      tags: [Runs]
+      summary: Get run detail
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema: { $ref: '#/components/schemas/RunId' }
+        - in: query
+          name: events_limit
+          schema: { type: integer, minimum: 1, maximum: 2000 }
+        - in: query
+          name: events_offset
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: events_since
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Run detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run: { $ref: '#/components/schemas/RunDetail' }
+                  steps:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunStep' }
+                  events:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunEvent' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /runs/{runId}/progress:
+    get:
+      tags: [Runs]
+      summary: Get run progress snapshot and recent events
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema: { $ref: '#/components/schemas/RunId' }
+        - in: query
+          name: events_limit
+          schema: { type: integer, minimum: 1, maximum: 1000 }
+      responses:
+        '200':
+          description: Progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  snapshot: { $ref: '#/components/schemas/RunProgressSnapshot' }
+                  events:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunLiteEvent' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /runs/{runId}/cancel:
+    post:
+      tags: [Runs]
+      summary: Request cancellation of a running run
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema: { $ref: '#/components/schemas/RunId' }
+      responses:
+        '200':
+          description: Cancellation requested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: cancellationRequested
+                  runId:
+                    $ref: '#/components/schemas/RunId'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /runs/{runId}/rerun:
+    post:
+      tags: [Runs]
+      summary: Queue a new run for the same job as the given run
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema: { $ref: '#/components/schemas/RunId' }
+      responses:
+        '200':
+          description: Queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: queued }
+                  runId: { $ref: '#/components/schemas/RunId' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # --- Agents: Registration and Approval ---
+  /agents/register-begin:
+    post:
+      tags: [Agents]
+      summary: Begin agent registration (anonymous)
+      description: |
+        Creates a short-lived pending registration request and emits an SSE to admin UIs.
+        The agent must poll `GET /agents/register-status/{requestId}` until approved/denied/expired.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRegistrationBeginRequest'
+      responses:
+        '202':
+          description: Pending approval; poll status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRegistrationBeginResponse'
+        '200':
+          description: Pending approval; poll status (legacy 200)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRegistrationBeginResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500': { $ref: '#/components/responses/Internal' }
+
+  /agents/register-status/{requestId}:
+    get:
+      tags: [Agents]
+      summary: Get registration request status (anonymous)
+      security: []
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Current status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRegistrationStatusResponse'
+
+  /agents/requests/{requestId}/approve:
+    post:
+      tags: [Agents]
+      summary: Approve a pending agent registration (admin)
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Approved }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/Internal' }
+
+  /agents/requests/{requestId}/deny:
+    post:
+      tags: [Agents]
+      summary: Deny a pending agent registration (admin)
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Denied }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/Internal' }
+
+  # --- Agents: Admin (List/Get/Delete) ---
+  /agents:
+    get:
+      tags: [Agents]
+      summary: List agents
+      responses:
+        '200':
+          description: Agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AgentListItem' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /agents/{uuid}:
+    get:
+      tags: [Agents]
+      summary: Get agent
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Agent detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentDetail'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    delete:
+      tags: [Agents]
+      summary: Delete agent (admin)
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # --- Agents: WebSocket Connect ---
+  /agent/connect:
+    get:
+      tags: [Agents]
+      summary: WebSocket upgrade for agent connections
+      description: |
+        Upgrades to WebSocket on the Agent listener. Clients must include `Authorization: Bearer <JWT>`
+        where the JWT is signed with the agent's Ed25519 private key using `alg=EdDSA` and contains
+        claims `uuid`, `name`, `iat`, and short-lived `exp`.
+
+        Note: OpenAPI does not model WS frames; this documents the upgrade endpoint only.
+      responses:
+        '101': { description: Switching Protocols (WebSocket) }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: cxtoken
+  
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthenticated:
+      description: Unauthenticated
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Internal:
+      description: Internal server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    RunId:
+      type: string
+      description: 8-character base36 ID (formatted)
+      example: 00k3xz9p
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Stable application error code (restresponse Code enum)
+          example: BadRequest
+        message:
+          type: string
+        details:
+          description: Optional error details
+          oneOf:
+            - type: array
+              items: { type: string }
+            - type: object
+      required: [code, message]
+
+    LoginRequest:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+      required: [email, password]
+
+    LoginStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          example: logged in
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        admin: { type: boolean }
+        enabled: { type: boolean }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        name: { type: string }
+        authKey: { type: string, nullable: true }
+        forcePasswordChange: { type: boolean }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+      required: [id, admin, enabled, email, name]
+
+    UserUpdate:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        phone: { type: string }
+        name: { type: string }
+
+    UserActivity:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        userId: { type: integer, format: int64 }
+        action: { type: string }
+        details: { type: string, nullable: true }
+        ip: { type: string, nullable: true }
+        userAgent: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        category: { type: string }
+        severity: { type: string }
+        title: { type: string }
+        source: { type: string, nullable: true }
+        fields: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+        seen: { type: boolean }
+        removed: { type: boolean }
+
+    DbConnectionPayload:
+      type: object
+      properties:
+        name: { type: string }
+        driver: { type: string, enum: [postgres, sqlite] }
+        dsn: { type: string }
+        description: { type: string, nullable: true }
+        enabled: { type: boolean, nullable: true }
+        autoCheckEnabled: { type: boolean, nullable: true }
+        autoCheckSeconds: { type: integer, format: int64, nullable: true }
+        agentUuid: { type: string, format: uuid, nullable: true }
+      required: [name, driver, dsn]
+
+    DbConnectionListItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        driver: { type: string }
+        description: { type: string, nullable: true }
+        enabled: { type: boolean, nullable: true }
+        autoCheckEnabled: { type: boolean }
+        autoCheckSeconds: { type: integer, format: int64, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        lastStatus: { type: string, nullable: true }
+        lastError: { type: string, nullable: true }
+        lastCheckedAt: { type: string, format: date-time, nullable: true }
+        maskedDsn: { type: string }
+        agentUuid: { type: string, format: uuid, nullable: true }
+        agentName: { type: string, nullable: true }
+        host: { type: string, nullable: true }
+        port: { type: string, nullable: true }
+        database: { type: string, nullable: true }
+        username: { type: string, nullable: true }
+
+    DbConnectionDetail:
+      allOf:
+        - $ref: '#/components/schemas/DbConnectionListItem'
+
+    DbTestResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        error: { type: string, nullable: true }
+        latencyMs: { type: integer, format: int64, nullable: true }
+
+    ActionStepPayload:
+      type: object
+      properties:
+        order: { type: integer, format: int64 }
+        name: { type: string }
+        sqlText: { type: string }
+        timeoutSeconds: { type: integer, format: int64, nullable: true }
+        expectation:
+          type: object
+          additionalProperties: true
+        onFailure: { type: string, nullable: true }
+      required: [order, name, sqlText]
+
+    ActionPayload:
+      type: object
+      properties:
+        name: { type: string }
+        dialect: { type: string }
+        description: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/ActionStepPayload' }
+      required: [name, dialect, steps]
+
+    ActionListItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        dialect: { type: string }
+        description: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, format: int64 }
+              order: { type: integer, format: int64 }
+              name: { type: string }
+              sqlText: { type: string }
+              onFailure: { type: string, nullable: true }
+
+    ActionDetail:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        dialect: { type: string }
+        description: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, format: int64 }
+              order: { type: integer, format: int64 }
+              name: { type: string }
+              sqlText: { type: string }
+              timeoutSeconds: { type: integer, format: int64, nullable: true }
+              expectation:
+                type: object
+                additionalProperties: true
+              onFailure: { type: string, nullable: true }
+
+    JobPayload:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        connection_id: { type: integer, format: int64 }
+        action_id: { type: integer, format: int64 }
+        schedule:
+          type: object
+          additionalProperties: true
+        enabled: { type: boolean, nullable: true }
+        variables:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              value: { type: string, nullable: true }
+      required: [name, connection_id, action_id, schedule]
+
+    Job:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        connectionId: { type: integer, format: int64 }
+        actionId: { type: integer, format: int64 }
+        schedule:
+          type: object
+          additionalProperties: true
+        enabled: { type: boolean, nullable: true }
+        nextRunAt: { type: string, format: date-time, nullable: true }
+        lastRunAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+
+    JobDetail:
+      allOf:
+        - $ref: '#/components/schemas/Job'
+        - type: object
+          properties:
+            variables:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string }
+                  value: { type: string, nullable: true }
+
+    RunListItem:
+      type: object
+      properties:
+        runId: { $ref: '#/components/schemas/RunId' }
+        jobId: { type: integer, format: int64 }
+        jobName: { type: string, nullable: true }
+        status: { type: string, enum: [queued, running, success, error] }
+        queuedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        durationMs: { type: integer, format: int64, nullable: true }
+        triggeredBy: { type: integer, format: int64, nullable: true }
+        triggerSource: { type: string, nullable: true }
+        message: { type: string, nullable: true }
+        rowsAffected: { type: integer, format: int64, nullable: true }
+
+    RunDetail:
+      type: object
+      properties:
+        runId: { $ref: '#/components/schemas/RunId' }
+        jobId: { type: integer, format: int64 }
+        jobName: { type: string, nullable: true }
+        status: { type: string, enum: [queued, running, success, error] }
+        queuedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        triggeredBy: { type: integer, format: int64, nullable: true }
+        triggerSource: { type: string, nullable: true }
+        message: { type: string, nullable: true }
+        rowsAffected: { type: integer, format: int64, nullable: true }
+        summary:
+          type: object
+          additionalProperties: true
+
+    RunStep:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        stepOrder: { type: integer, format: int64 }
+        stepName: { type: string }
+        status: { type: string }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        sqlText: { type: string, nullable: true }
+        timeoutSeconds: { type: integer, format: int64, nullable: true }
+        rowsCount: { type: integer, format: int64, nullable: true }
+        rowsAffected: { type: integer, format: int64, nullable: true }
+        expectation:
+          type: object
+          additionalProperties: true
+        expectOk: { type: boolean, nullable: true }
+        expectMessage: { type: string, nullable: true }
+        errorCode: { type: string, nullable: true }
+        errorMessage: { type: string, nullable: true }
+        details:
+          type: object
+          additionalProperties: true
+
+    RunEvent:
+      type: object
+      properties:
+        createdAt: { type: string, format: date-time }
+        kind: { type: string }
+        message: { type: string, nullable: true }
+        stepId: { type: integer, format: int64, nullable: true }
+        data:
+          type: object
+          additionalProperties: true
+
+    RunLiteEvent:
+      type: object
+      properties:
+        ts: { type: string, format: date-time }
+        type: { type: string }
+        stepIndex: { type: integer, nullable: true }
+        stepName: { type: string, nullable: true }
+        message: { type: string, nullable: true }
+
+    RunProgressSnapshot:
+      type: object
+      properties:
+        runId: { $ref: '#/components/schemas/RunId' }
+        jobId: { type: integer, format: int64 }
+        status: { type: string, enum: [queued, running, success, error] }
+        currentStep: { type: integer, nullable: true }
+        currentStepName: { type: string, nullable: true }
+        startedAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
+        message: { type: string, nullable: true }
+
+    GlobalSettings:
+      type: object
+      properties:
+        serverUrl: { type: string }
+        email:
+          type: object
+          properties:
+            smtpHost: { type: string }
+            smtpPort: { type: string }
+            secure: { type: string }
+            fromName: { type: string }
+            fromEmail: { type: string }
+            smtpLogin: { type: string }
+            smtpPassword: { type: string }
+        sms:
+          type: object
+          properties:
+            provider: { type: string }
+            twilioMode: { type: string }
+            twilioUserPass:
+              type: object
+              properties:
+                fromNumber: { type: string }
+                username: { type: string }
+                password: { type: string }
+            twilioApiKey:
+              type: object
+              properties:
+                fromNumber: { type: string }
+                accountSid: { type: string }
+                apiKey: { type: string }
+                apiSecret: { type: string }
+
+    GlobalSettingsPut:
+      allOf:
+        - $ref: '#/components/schemas/GlobalSettings'
+
+    # Agent schemas
+    AgentListItem:
+      type: object
+      properties:
+        uuid: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string }
+        online: { type: boolean }
+        lastSeenAt: { type: string, format: date-time, nullable: true }
+        lastSeenIp: { type: string, nullable: true }
+
+    AgentDetail:
+      type: object
+      properties:
+        uuid: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string }
+        publicKey: { type: string }
+        approvedBy: { type: integer, format: int64, nullable: true }
+        approvedAt: { type: string, format: date-time, nullable: true }
+        lastSeenAt: { type: string, format: date-time, nullable: true }
+        lastSeenIp: { type: string, nullable: true }
+        metadataJson: { type: string, nullable: true }
+
+    # Agent registration schemas
+    AgentRegistrationBeginRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Display name for the agent
+        uuid:
+          type: string
+          format: uuid
+          description: Agent UUID (v4)
+        publicKey:
+          type: string
+          description: Base64 of the raw 32-byte Ed25519 public key
+          example: 11qYAYLefZrZ8j5g2zV7qg1v1u7ZtYy3vZQbHqv1t2Q=
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional machine information for operator context
+      required: [name, uuid, publicKey]
+
+    AgentRegistrationBeginResponse:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        pollAfterMs:
+          type: integer
+          format: int32
+          example: 1000
+      required: [requestId]
+
+    AgentRegistrationStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Current registration status
+          enum: [pending, approved, denied, expired]
+      required: [status]

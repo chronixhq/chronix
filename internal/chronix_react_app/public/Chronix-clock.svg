@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Chronix clock icon">
+  <title>Chronix clock</title>
+  <style>
+    :root { color-scheme: light dark; }
+    /* Default to dark stroke for light themes */
+    .stroke { stroke: #111; fill: none; }
+    .fill { fill: #111; }
+    .shadow { stroke: rgba(0,0,0,0.12); fill: none; }
+    @media (prefers-color-scheme: dark) {
+      .stroke { stroke: #42a6f5; }
+      .fill { fill: #42a6f5; }
+      .shadow { stroke: rgba(255,255,255,0.18); }
+    }
+  </style>
+  <!-- Outer ring with subtle opposite-contrast shadow for visibility on mixed tabs -->
+  <circle cx="256" cy="256" r="216" class="shadow" stroke-width="46"/>
+  <circle cx="256" cy="256" r="216" class="stroke" stroke-width="40" stroke-linecap="round"/>
+
+  <!-- Hour hand -->
+  <path class="stroke" d="M256 256 L256 120" stroke-width="28" stroke-linecap="round"/>
+  <!-- Hour hand arrow -->
+  <path class="fill" d="M256 92 l20 36 h-40z"/>
+
+  <!-- Minute hand (angled) -->
+  <path class="stroke" d="M256 256 L392 320" stroke-width="24" stroke-linecap="round"/>
+  <!-- Minute hand arrow at end -->
+  <path class="fill" d="M420 328 l-48 4 14-36z"/>
+
+  <!-- Center cap -->
+  <circle cx="256" cy="256" r="12" class="fill"/>
+</svg>

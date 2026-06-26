@@ -1,0 +1,6 @@
+sharedIndex:
+    project:
+        - url: http://shared.dsherwin.net/jetbrains-indexes/project/chronix
+    consents:
+        - kind: project
+          decision: allowed

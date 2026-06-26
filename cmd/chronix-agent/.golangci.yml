@@ -1,0 +1,32 @@
+
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - revive
+  # v2: use exclusions instead of deprecated run.skip-dirs / issues.exclude-*
+  exclusions:
+    # don't lint generated ANTLR code if it were here
+    paths:
+      - ^internal/sqlsyntax/gen(/|$)
+    # silence revive doc-comment nags for exported/package items for now
+    rules:
+      - path: .
+        linters: [revive]
+        text: "(?i)(package-comments|exported:|comment on exported)"
+
+issues:
+  # unlimited per-linter and per-text duplicates (keeps full report)
+  max-issues-per-linter: 0
+  max-same-issues: 0
+

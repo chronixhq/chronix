@@ -1,0 +1,56 @@
+import {lazy, type ComponentType} from 'react'
+
+function lazyNamedRoute(loader: () => Promise<Record<string, unknown>>, exportName: string) {
+  return lazy(async () => {
+    const module = await loader()
+    const routeComponent = module[exportName]
+    if (typeof routeComponent !== 'function') {
+      throw new Error(`Missing route export "${exportName}"`)
+    }
+    return {default: routeComponent as ComponentType<object>}
+  })
+}
+
+export const ActivityList = lazyNamedRoute(() => import('../modules/Activity/ActivityList.tsx'), 'ActivityList')
+export const Actions = lazyNamedRoute(() => import('../modules/Actions/Actions.tsx'), 'Actions')
+export const AddDatabaseConnection = lazyNamedRoute(() => import('../modules/Connections/Databases/AddDatabaseConnection.tsx'), 'AddDatabaseConnection')
+export const AddWebtaskConnection = lazyNamedRoute(() => import('../modules/Connections/WebTasks/AddWebtaskConnection.tsx'), 'AddWebtaskConnection')
+export const AdminOverview = lazyNamedRoute(() => import('../modules/Settings/Overview.tsx'), 'AdminOverview')
+export const AgentDetail = lazyNamedRoute(() => import('../modules/Agents/AgentDetail.tsx'), 'AgentDetail')
+export const AgentsList = lazyNamedRoute(() => import('../modules/Agents/AgentsList.tsx'), 'AgentsList')
+export const AlertsSettingsPage = lazyNamedRoute(() => import('../modules/Settings/AlertsSettings.tsx'), 'AlertsSettingsPage')
+export const AllConnectionsList = lazyNamedRoute(() => import('../modules/Connections/All/AllConnectionsList.tsx'), 'AllConnectionsList')
+export const BrandingPage = lazyNamedRoute(() => import('../modules/Settings/Branding.tsx'), 'BrandingPage')
+export const BugReportPage = lazyNamedRoute(() => import('../modules/Feedback/BugReportPage.tsx'), 'BugReportPage')
+export const BugReportsList = lazyNamedRoute(() => import('../modules/Feedback/BugReportsList.tsx'), 'BugReportsList')
+export const CreateAction = lazyNamedRoute(() => import('../modules/Actions/CreateAction.tsx'), 'CreateAction')
+export const CreateJob = lazyNamedRoute(() => import('../modules/Jobs/CreateJob.tsx'), 'CreateJob')
+export const CreateShellAction = lazyNamedRoute(() => import('../modules/Actions/CreateShellAction.tsx'), 'CreateShellAction')
+export const CreateShellConnection = lazyNamedRoute(() => import('../modules/Connections/Shell/CreateShellConnection.tsx'), 'CreateShellConnection')
+export const CreateWebtaskAction = lazyNamedRoute(() => import('../modules/Actions/CreateWebtaskAction.tsx'), 'CreateWebtaskAction')
+export const DatabaseConnectionsList = lazyNamedRoute(() => import('../modules/Connections/Databases/DatabaseConnectionsList.tsx'), 'DatabaseConnectionsList')
+export const EditAction = lazyNamedRoute(() => import('../modules/Actions/EditAction.tsx'), 'EditAction')
+export const EditDatabaseConnection = lazyNamedRoute(() => import('../modules/Connections/Databases/EditDatabaseConnection.tsx'), 'EditDatabaseConnection')
+export const EditJob = lazyNamedRoute(() => import('../modules/Jobs/EditJob.tsx'), 'EditJob')
+export const EditShellAction = lazyNamedRoute(() => import('../modules/Actions/EditShellAction.tsx'), 'EditShellAction')
+export const EditShellConnection = lazyNamedRoute(() => import('../modules/Connections/Shell/EditShellConnection.tsx'), 'EditShellConnection')
+export const EditUser = lazyNamedRoute(() => import('../modules/Settings/EditUser.tsx'), 'EditUser')
+export const EditWebtaskAction = lazyNamedRoute(() => import('../modules/Actions/EditWebtaskAction.tsx'), 'EditWebtaskAction')
+export const EditWebtaskConnection = lazyNamedRoute(() => import('../modules/Connections/WebTasks/EditWebtaskConnection.tsx'), 'EditWebtaskConnection')
+export const EmailNotifierPage = lazyNamedRoute(() => import('../modules/Settings/EmailNotifier.tsx'), 'EmailNotifierPage')
+export const FeatureRequestPage = lazyNamedRoute(() => import('../modules/Feedback/FeatureRequestPage.tsx'), 'FeatureRequestPage')
+export const FeatureRequestsList = lazyNamedRoute(() => import('../modules/Feedback/FeatureRequestsList.tsx'), 'FeatureRequestsList')
+export const HttpsSettingsPage = lazyNamedRoute(() => import('../modules/Settings/HttpsSettings.tsx'), 'HttpsSettingsPage')
+export const Jobs = lazyNamedRoute(() => import('../modules/Jobs/Jobs.tsx'), 'Jobs')
+export const NotificationsPage = lazyNamedRoute(() => import('../modules/Notifications/NotificationsPage.tsx'), 'NotificationsPage')
+export const ResetPassword = lazyNamedRoute(() => import('../modules/User/ResetPassword.tsx'), 'ResetPassword')
+export const RunsList = lazyNamedRoute(() => import('../modules/Runs/RunsList.tsx'), 'RunsList')
+export const RunDetail = lazyNamedRoute(() => import('../modules/Runs/RunDetail.tsx'), 'RunDetail')
+export const ServerUrlPage = lazyNamedRoute(() => import('../modules/Settings/ServerUrl.tsx'), 'ServerUrlPage')
+export const ShellConnectionsList = lazyNamedRoute(() => import('../modules/Connections/Shell/ShellConnectionsList.tsx'), 'ShellConnectionsList')
+export const SmsNotifierPage = lazyNamedRoute(() => import('../modules/Settings/SmsNotifier.tsx'), 'SmsNotifierPage')
+export const UpdatesPage = lazyNamedRoute(() => import('../modules/Settings/Updates.tsx'), 'UpdatesPage')
+export const UserProfile = lazyNamedRoute(() => import('../modules/User/UserProfile.tsx'), 'UserProfile')
+export const UsersAdmin = lazyNamedRoute(() => import('../modules/Settings/UsersAdmin.tsx'), 'UsersAdmin')
+export const WebhooksPage = lazyNamedRoute(() => import('../modules/Settings/Webhooks.tsx'), 'WebhooksPage')
+export const WebtaskConnectionsList = lazyNamedRoute(() => import('../modules/Connections/WebTasks/WebtaskConnectionsList.tsx'), 'WebtaskConnectionsList')
